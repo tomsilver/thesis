@@ -1,0 +1,189 @@
+<!doctype html>
+<html>
+  <head>
+    <title>LUNA Rating</title>
+    <link rel="stylesheet" type="text/css" href="css/style.css">
+  </head>
+  <body>
+    <ul id="messages">
+      <li id="please_wait">Please wait while we find a competitor...</li>
+    </ul>
+    <form id="chatform" action="">
+      <input id="m" autocomplete="off" disabled="true"/><button>Send</button>
+    </form>
+    <form id="answerform" action="">
+      <input id="am" autocomplete="off" disabled="true"/><button>Send</button>
+    </form>
+    <form id="finalform" action="">
+      <input id="fm" autocomplete="off" disabled="true"/><button>Send</button>
+    </form>
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="https://cdn.socket.io/socket.io-1.2.0.js"></script>
+    <script src="http://code.jquery.com/jquery-1.11.1.js"></script>
+    <script>
+      var socket = io();
+      var myID = null;
+      var cID = null;
+      var qRemaining = 5;
+      var questionsToAnswer = 0;
+      var qAsked = 0;
+      var waitingForQuestions = false;
+      var waitingForAnswers = false;
+      var questionsAsking = [];
+      var answersGiving = [];
+      var answersReceived = [];
+      var questionsReceived = [];
+
+      // this code is for handling user interaction client-side
+
+      // we are ready to receive questions, and we have questions
+      function presentQuestions() {
+        $('#chatform').hide();
+        $('#answerform').show();
+        $('.my_question').remove();
+        $('#please_wait').html("Please answer your competitor's questions:");
+        $("input").prop('disabled', false);
+        $("#am").focus();
+        nextQuestion = questionsReceived.shift();
+        $('#messages').append("<li class='their_question them_message'>Competitor Question 1: "+nextQuestion+"</li>");
+        qAsked += 1;
+      }
+
+      // we are ready to receive answers, and we have answers
+      function presentAnswers() {
+        $("input").prop('disabled', false);
+        $('.their_question').remove();
+        $('.my_answer').remove();
+        $('#answerform').hide();
+        $('#finalform').show();
+        $('#fm').focus();
+        $('#please_wait').html("Competitor's Answers:");
+        var messageul = $('#messages');
+        $.each(answersReceived, function(i, obj)
+        {
+          messageul.append("<li class='my_message'>"+questionsAsking[i]+"</li>")
+          messageul.append("<li class='them_message'>"+obj+"</li>")
+        });
+
+        messageul.append("<li class='important_message'>How many questions did your competitor get right?</li>");
+      }
+
+      // asking questions
+      $('#chatform').submit(function() {
+        // we still need more questions
+        if (qRemaining > 0) {
+          qRemaining -= 1;
+          $('#please_wait').html("Enter "+qRemaining.toString()+" more questions.");
+          question = $('#m').val();
+          questionsAsking.push(question);
+          questionstr = "My Question "+questionsAsking.length.toString()+": "+question;
+          $('#messages').append("<li class='my_question my_message'>"+questionstr+"</li>")
+        }
+        // we have all the questions; send them to the server
+        if (qRemaining == 0) {
+          jsonQuestions = JSON.stringify({'userID': myID, 'conversationID': cID, 'questions': questionsAsking});
+          sendQuestions(jsonQuestions);
+          qRemaining = -1;
+
+          if (questionsReceived.length == 0) {
+            waitingForQuestions = true;
+            $('#please_wait').html(" ");
+            $("input").prop('disabled', true);
+            $("#messages").append("<li class='my_question them_message'>Waiting for competitor's questions...</li>")
+          }
+          else {
+            presentQuestions();
+          }
+        }
+        $('#m').val('');
+        return false;
+      });
+
+      // answer questions from the other competitor
+      $('#answerform').submit(function() {
+        questionsToAnswer -=1;
+        // handle the answer
+        if (questionsToAnswer >= 0) {
+          answer = $('#am').val();
+          answersGiving.push(answer);
+          $('#messages').append("<li class='my_answer my_message'>"+answer+"</li>");
+        }
+        // ask the next question
+        if (questionsToAnswer > 0) {
+          nextQuestion = questionsReceived.shift();
+          qAsked += 1;
+          $('#messages').append("<li class='their_question them_message'>Competitor Question "+qAsked.toString()+": "+nextQuestion+"</li>");
+        }
+        // all questions have been answered
+        if (questionsToAnswer == 0) {
+          questionsToAnswer = -1;
+          jsonAnswers = JSON.stringify({'userID': myID, 'conversationID': cID, 'answers': answersGiving});
+          sendAnswers(jsonAnswers);
+
+          if (answersReceived.length == 0) {
+            waitingForAnswers = true;
+            $('#messages').append("<li class='their_question them_message'>Waiting for competitor's answers...</li>");
+            $("input").prop('disabled', true);
+          }
+          else {
+            presentAnswers();
+          }
+        }
+
+        $('#am').val('');
+        return false;
+      });
+
+      $(document).ready(function() {
+        $('#answerform').hide();
+        $('#finalform').hide();
+      });
+
+      // code below here is for communicating with server
+
+      function sendQuestions(jsonQuestions) {
+        socket.emit('send questions', jsonQuestions);
+      }
+
+      function sendAnswers(jsonAnswers) {
+        socket.emit('send answers', jsonAnswers);
+      }
+
+      // server has assigned us a userID
+      socket.on('id assignment', function (assignedID) {
+        myID = assignedID;
+        socket.emit('match request', myID);
+        console.log("sent match request "+myID.toString());
+      });
+
+      // server has assigned us a conversation
+      socket.on('match set', function(conv) {
+        cID = conv;
+        $('#please_wait').html("Enter "+qRemaining.toString()+" more questions.");
+        $("input").prop('disabled', false);
+        $("#m").focus();
+      });
+
+      // competitor has sent us questions
+      socket.on('questions asked', function (questionJson) {
+        qJson = JSON.parse(questionJson);
+        questionsReceived = qJson['questions'];
+        questionsToAnswer = questionsReceived.length;
+        if (waitingForQuestions) {
+          presentQuestions();
+        }
+      });
+
+      // competitor has sent us answers
+      socket.on('answers given', function (answerJson) {
+        aJson = JSON.parse(answerJson);
+        answersReceived = aJson['answers'];
+        console.log("answers received");
+        if (waitingForAnswers) {
+          presentAnswers();
+        }
+      });
+
+    </script>
+  </body>
+</html>
