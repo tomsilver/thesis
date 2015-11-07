@@ -45,11 +45,15 @@ class Question(str):
 
 
 class Response(str):
-	def __new__(self, value, respondent):
+	def __new__(self, value, question, respondent):
 		return str.__new__(self, value)
 	
-	def __init__(self, value, respondent):
+	def __init__(self, value, question, respondent):
+		self.question = question
 		self.respondent = respondent
+
+	def getIdeal(self):
+		return self.question.getIdealResponse()
 
 	def getRating(self):
 		return self.respondent.getRating()

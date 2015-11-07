@@ -5,13 +5,20 @@ import os
 import random
 import re
 
+TOTAL_RESP = 24
 STOP_WORDS = get_stop_words('english')
 
 
 def clean_str(s):
 	s = s.replace("\n", "")
 	s = s.replace("<br>", "")
+	s = s.lower()
 	return s
+
+def str_to_word_list(s):
+	words = re.sub("[^\w]", " ",  s).split()
+	words = [w for w in words if w not in STOP_WORDS]
+	return words
 
 
 def parseSingleMohlerFile(file_path):
@@ -29,7 +36,7 @@ def parseMohler(base_data_dir="../../datasets/ShortAnswerGrading_v2.0/data",
 				ideal_file="raw/answers",
 				answers_file="raw/all", 
 				scores_dir="scores",
-				total_resp=24):
+				total_resp=TOTAL_RESP):
 
 	# get questions
 	questions_abs_file = os.path.join(base_data_dir, questions_file)
@@ -93,32 +100,53 @@ def parseMohler(base_data_dir="../../datasets/ShortAnswerGrading_v2.0/data",
 		for qid in questions_dict:
 			question = questions_dict[qid]
 			answer = all_answers_dict[qid][ridx]
-			question.addResponse(Response(answer, resp))
+			question.addResponse(Response(answer, question, resp))
 
 	return ql
 
 
-def splitData(data, training_perc=0.8):
-	random.shuffle(data)
+def splitQuestionList(questionList, trainingPerc=0.6):
+	# THIS NEEDS TO BE IMPROVED
+	order = range(TOTAL_RESP)
+	random.shuffle(order)
+	pivot = int(TOTAL_RESP*trainingPerc)
+	trainingIdxs = sorted(order[:pivot])
 
-	pivot = int(len(data)*training_perc)
+	trainQuestions = []
+	testQuestions = []
 
-	train = data[:pivot]
-	test = data[pivot:]
+	for question in questionList.getQuestions():
+		question_str = str(question)
+		ideal_response = question.getIdealResponse()
+		
+		trainQuestion = Question(question_str, ideal_response)
+		testQuestion = Question(question_str, ideal_response)
 
-	return train, test
+		for i,r in enumerate(question.getResponses()):
+			if i in trainingIdxs:
+				trainQuestion.addResponse(r)
+			else:
+				testQuestion.addResponse(r)
+
+		trainQuestions.append(trainQuestion)
+		testQuestions.append(testQuestion)
+
+	trainQL = QuestionList(trainQuestions)
+	testQL = QuestionList(testQuestions)
+
+	return trainQL, testQL
 
 
-def wordsFromResponse(response):
+def wordsFromResponse(response, ngram=1):
 	words = set()
-	candidates = re.sub("[^\w]", " ",  response).split()
-	for candidate in candidates:
-		if candidate not in STOP_WORDS:
-			words.add(candidate)
+	candidates = str_to_word_list(response)
+	for i in range(0, len(candidates)+1-ngram):
+		candidate = ' '.join(candidates[i:i+ngram])
+		words.add(candidate)
 	return words
 
 
-def wordsFromQuestionList(questionList):
+def wordsFromQuestionList(questionList, ngram_cap=1):
 	words = set()
 
 	try:
@@ -126,10 +154,11 @@ def wordsFromQuestionList(questionList):
 	except AttributeError:
 		questions = questionList
 
-	for question in questions:
-		for response in question.getResponses():
-			new_words = wordsFromResponse(response)
-			words.update(new_words)
+	for ngram in range(1, ngram_cap+1):
+		for question in questions:
+			for response in question.getResponses():
+				new_words = wordsFromResponse(response, ngram)
+				words.update(new_words)
 	return words
 
 
