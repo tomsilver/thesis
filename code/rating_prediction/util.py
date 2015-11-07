@@ -1,7 +1,11 @@
 from questions import *
+from stop_words import get_stop_words
 
 import os
+import random
+import re
 
+STOP_WORDS = get_stop_words('english')
 
 
 def clean_str(s):
@@ -75,8 +79,14 @@ def parseMohler(base_data_dir="../../datasets/ShortAnswerGrading_v2.0/data",
 			except IndexError:
 				respondent_scores.append(float(score))
 
-	for score in respondent_scores:
-		respondents.append(Respondent(score))
+		# scale
+		max_score = max(respondent_scores)
+		min_score = min(respondent_scores)
+		for i, score in enumerate(respondent_scores):
+			respondent_scores[i] = (score-min_score)/(max_score-min_score)
+
+	for idx, score in enumerate(respondent_scores):
+		respondents.append(Respondent(idx, score))
 
 	# add responses
 	for ridx, resp in enumerate(respondents):
@@ -86,6 +96,41 @@ def parseMohler(base_data_dir="../../datasets/ShortAnswerGrading_v2.0/data",
 			question.addResponse(Response(answer, resp))
 
 	return ql
+
+
+def splitData(X, y, training_perc=0.8):
+	# randomize order
+	tmp = list(zip(X, y))
+	random.shuffle(tmp)
+	X, y = zip(*tmp)
+
+	pivot = int(len(y)*training_perc)
+
+	trX = X[:pivot]
+	trY = y[:pivot]
+	teX = X[pivot:]
+	teY = y[pivot:]
+
+	return trX, trY, teX, teY
+
+
+def wordsFromResponse(response):
+	words = set()
+	candidates = re.sub("[^\w]", " ",  response).split()
+	for candidate in candidates:
+		if candidate not in STOP_WORDS:
+			words.add(candidate)
+	return words
+
+
+def wordsFromQuestionList(questionList):
+	words = set()
+	for question in questionList.getQuestions():
+		for response in question.getResponses():
+			new_words = wordsFromResponse(response)
+			words.update(new_words)
+	return words
+
 
 
 if __name__ == '__main__':

@@ -11,6 +11,16 @@ class QuestionList(object):
 	def getQuestions(self):
 		return self.questions
 
+	def getQuestionsPerRespondent(self):
+		qpr = {}
+		for q in self.getQuestions():
+			for r in q.getResponses():
+				try:
+					qpr[r.respondent].append(r)
+				except KeyError:
+					qpr[r.respondent] = [r]
+		return qpr
+
 
 
 class Question(str):
@@ -47,7 +57,8 @@ class Response(str):
 
 
 class Respondent(object):
-	def __init__(self, rating):
+	def __init__(self, rid, rating):
+		self.rid = rid
 		self.rating = rating
 
 	def getRating(self):
