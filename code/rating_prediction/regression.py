@@ -1,3 +1,4 @@
+from questions import QuestionList
 from sklearn import linear_model
 
 import numpy as np
@@ -10,15 +11,17 @@ class RatingRegression(object):
 		self.questionList = questionList
 
 	def run(self):
-		self.prepare()
-		X, y = self.parseQuestionList(self.questionList)
-		trainX, trainy, testX, testy = util.splitData(X, y)
+		train, test = util.splitData(self.questionList.questions)
+		self.prepare(train)
+
+		trainX, trainy = self.parseQuestionList(QuestionList(train))
+		testX, testy = self.parseQuestionList(QuestionList(test))
 		self.train(trainX, trainy)
 		preds = self.predict(testX)
 		return self.evaluate(preds, np.array(testy))
 
-	def prepare(self):
-		all_words = list(util.wordsFromQuestionList(self.questionList))
+	def prepare(self, train):
+		all_words = list(util.wordsFromQuestionList(train))
 		self.wordIndices = {}
 		for idx, word in enumerate(all_words):
 			self.wordIndices[word] = idx
@@ -71,8 +74,9 @@ class BOWRegression(RatingRegression):
 		words = util.wordsFromResponse(resp)
 		v = np.zeros(self.vecDim, dtype=float)
 		for word in words:
-			idx = self.wordIndices[word]
-			v[idx] += 1
+			if word in self.wordIndices:
+				idx = self.wordIndices[word]
+				v[idx] += 1
 		return v
 
 

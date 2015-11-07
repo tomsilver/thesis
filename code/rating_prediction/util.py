@@ -98,20 +98,15 @@ def parseMohler(base_data_dir="../../datasets/ShortAnswerGrading_v2.0/data",
 	return ql
 
 
-def splitData(X, y, training_perc=0.8):
-	# randomize order
-	tmp = list(zip(X, y))
-	random.shuffle(tmp)
-	X, y = zip(*tmp)
+def splitData(data, training_perc=0.8):
+	random.shuffle(data)
 
-	pivot = int(len(y)*training_perc)
+	pivot = int(len(data)*training_perc)
 
-	trX = X[:pivot]
-	trY = y[:pivot]
-	teX = X[pivot:]
-	teY = y[pivot:]
+	train = data[:pivot]
+	test = data[pivot:]
 
-	return trX, trY, teX, teY
+	return train, test
 
 
 def wordsFromResponse(response):
@@ -125,7 +120,13 @@ def wordsFromResponse(response):
 
 def wordsFromQuestionList(questionList):
 	words = set()
-	for question in questionList.getQuestions():
+
+	try:
+		questions = questionList.getQuestions()
+	except AttributeError:
+		questions = questionList
+
+	for question in questions:
 		for response in question.getResponses():
 			new_words = wordsFromResponse(response)
 			words.update(new_words)
