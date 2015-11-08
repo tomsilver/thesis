@@ -9,8 +9,10 @@ class Predictor(object):
 	def __init__(self, questionList):
 		self.questionList = questionList
 
-	def run(self):
-		train, test = util.splitQuestionList(self.questionList)
+	def run(self, train=None, test=None):
+		if train is None:
+			train, test = util.splitQuestionList(self.questionList)
+		
 		self.prepare(train)
 
 		trainX, trainy = self.parseQuestionList(train)

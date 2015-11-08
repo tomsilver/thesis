@@ -5,7 +5,7 @@ import numpy as np
 import util
 
 
-class AnswerBasedPredictor(Predictor):
+class ResponseBasedPredictor(Predictor):
 
 	def prepare(self, train):
 		all_words = list(util.wordsFromQuestionList(train))
@@ -48,7 +48,7 @@ class AnswerBasedPredictor(Predictor):
 
 
 
-class BOWRegression(AnswerBasedPredictor):
+class BOWRegression(ResponseBasedPredictor):
 
 	def responseToVec(self, resp):
 		words = util.wordsFromResponse(resp)
@@ -61,7 +61,7 @@ class BOWRegression(AnswerBasedPredictor):
 
 
 
-class NGramRegression(AnswerBasedPredictor):
+class NGramRegression(ResponseBasedPredictor):
 
 	def __init__(self, questionList, ngram_cap=2):
 		super(NGramRegression, self).__init__(questionList)
@@ -90,7 +90,7 @@ class NGramRegression(AnswerBasedPredictor):
 
 if __name__ == '__main__':
 	ql = util.parseMohler()
-	bow = NGramRegression(ql, 3)
+	bow = NGramRegression(ql, 1)
 	print bow.run()
 
 

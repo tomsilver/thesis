@@ -1,6 +1,7 @@
 class QuestionList(object):
 	def __init__(self, questions=None):
 		self.questions = questions
+		self.qpr = None
 
 	def addQuestion(self, question):
 		if self.questions is None:
@@ -12,15 +13,36 @@ class QuestionList(object):
 		return self.questions
 
 	def getQuestionsPerRespondent(self):
-		qpr = {}
+		if self.qpr is not None:
+			return self.qpr
+
+		self.qpr = {}
+
 		for q in self.getQuestions():
 			for r in q.getResponses():
 				try:
-					qpr[r.respondent].append(r)
+					self.qpr[r.respondent].append(r)
 				except KeyError:
-					qpr[r.respondent] = [r]
-		return qpr
+					self.qpr[r.respondent] = [r]
 
+		return self.qpr
+
+	def prettyPrint(self):
+		qpr = self.getQuestionsPerRespondent()
+
+		for respondent in qpr:
+			print "Respondent", respondent,
+			print "(rating:",
+			print respondent.getRating(),
+			print ")"
+			for resp in qpr[respondent]:
+				print "Question:",
+				print resp.getQuestion()
+				print "Ideal:",
+				print resp.getIdeal()
+				print "Response:",
+				print resp
+				print
 
 
 class Question(str):
@@ -40,7 +62,9 @@ class Question(str):
 			self.responses = [response]
 
 	def getResponses(self):
-		return self.responses
+		if hasattr(self, 'responses'):
+			return self.responses
+		return []
 
 
 
@@ -55,6 +79,9 @@ class Response(str):
 	def getIdeal(self):
 		return self.question.getIdealResponse()
 
+	def getQuestion(self):
+		return self.question
+
 	def getRating(self):
 		return self.respondent.getRating()
 
@@ -67,5 +94,4 @@ class Respondent(object):
 
 	def getRating(self):
 		return self.rating
-
 
