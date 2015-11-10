@@ -92,6 +92,9 @@ class Respondent(object):
 		self.rid = rid
 		self.rating = rating
 
+	def setRating(self, rating):
+		self.rating = rating
+
 	def getRating(self):
 		return self.rating
 

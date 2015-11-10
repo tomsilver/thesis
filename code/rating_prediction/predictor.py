@@ -1,6 +1,7 @@
 from questions import QuestionList
 
 import numpy as np
+import random
 import util
 
 
@@ -35,4 +36,29 @@ class Predictor(object):
 		return rmse
 
 	def parseQuestionList(self, questionList):
-		raise UnimplementedError
+		qpr = questionList.getQuestionsPerRespondent()
+
+		y = []
+
+		for respondent in qpr.keys():
+			y.append(respondent.getRating())
+
+		return None, y
+
+
+class ConstantBestGuessPredictor(Predictor):
+
+	def train(self, X, y):
+		self.guess = sum(y)/(1.0*len(y))
+
+	def predict(self, X):
+		return self.guess
+
+
+
+class RandomPredictor(Predictor):
+
+	def predict(self, X):
+		return random.random()
+
+

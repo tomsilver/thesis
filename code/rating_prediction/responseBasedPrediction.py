@@ -1,4 +1,4 @@
-from predictor import Predictor
+from predictor import ConstantBestGuessPredictor, Predictor, RandomPredictor
 from sklearn import linear_model
 
 import numpy as np
@@ -48,16 +48,24 @@ class ResponseBasedPredictor(Predictor):
 
 
 
-class BOWRegression(ResponseBasedPredictor):
+class IndividualResponseBasedPredictor(ResponseBasedPredictor):
 
-	def responseToVec(self, resp):
-		words = util.wordsFromResponse(resp)
-		v = np.zeros(self.vecDim, dtype=float)
-		for word in words:
-			if word in self.wordIndices:
-				idx = self.wordIndices[word]
-				v[idx] += 1
-		return v
+	def parseQuestionList(self, questionList):
+		"""Maintain all question vectors."""
+		qpr = questionList.getQuestionsPerRespondent()
+
+		X = []
+		y = []
+
+		for respondent, responses in qpr.items():
+			x = []
+			for resp in responses:
+				x.extend(self.responseToVec(resp))
+
+			X.append(x)
+			y.append(respondent.getRating())
+
+		return X, y
 
 
 
@@ -87,11 +95,69 @@ class NGramRegression(ResponseBasedPredictor):
 		return v
 
 
+class IndividualNGramRegression(IndividualResponseBasedPredictor):
+
+	def __init__(self, questionList, ngram_cap=2):
+		super(IndividualNGramRegression, self).__init__(questionList)
+		self.ngram_cap = ngram_cap
+
+	def prepare(self, train):
+		all_words = list(util.wordsFromQuestionList(train, self.ngram_cap))
+		self.wordIndices = {}
+		for idx, word in enumerate(all_words):
+			self.wordIndices[word] = idx
+		self.vecDim = len(all_words)
+
+	def responseToVec(self, resp):
+		words = set()
+		for ngram in range(1, self.ngram_cap+1):
+			words |= util.wordsFromResponse(resp, ngram)
+
+		v = np.zeros(self.vecDim, dtype=float)
+		for word in words:
+			if word in self.wordIndices:
+				idx = self.wordIndices[word]
+				v[idx] += 1
+		return v
+
+
 
 if __name__ == '__main__':
-	ql = util.parseMohler()
-	bow = NGramRegression(ql, 1)
-	print bow.run()
+	total_err_ran = 0.0
+	total_err = 0.0
+	total_err1 = 0.0
+	total_err2 = 0.0
+	total_err3 = 0.0
+
+	for i in range(util.TRIALS):
+		print "Trial", i
+
+		ql = util.parsePowerGrading()
+		ran = RandomPredictor(ql)
+		bow = ConstantBestGuessPredictor(ql)
+		bow1 = NGramRegression(ql, 1)
+		bow2 = NGramRegression(ql, 2)
+		bow3 = NGramRegression(ql, 3)
+		total_err_ran += ran.run()
+		total_err += bow.run()
+		total_err1 += bow1.run()
+		total_err2 += bow2.run()
+		total_err3 += bow3.run()
+
+	print "Average Random RMSE:",
+	print total_err_ran/util.TRIALS
+
+	print "Average CBG RMSE:",
+	print total_err/util.TRIALS
+
+	print "Ngram 1 Average RMSE:",
+	print total_err1/util.TRIALS
+
+	print "Ngram 2 Average RMSE:",
+	print total_err2/util.TRIALS
+
+	print "Ngram 3 Average RMSE:",
+	print total_err3/util.TRIALS
 
 
 						
