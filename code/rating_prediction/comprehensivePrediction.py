@@ -1,5 +1,6 @@
+from questionBasedPrediction import BinaryOverlapPredictor, CharEditDistancePredictor, FractionOverlapPredictor, WordEditDistancePredictor
 from predictor import ConstantBestGuessPredictor, Predictor, RandomPredictor
-from sklearn import linear_model
+from responseBasedPrediction import BigramRegression, NGramRegression, TrigramRegression
 
 import numpy as np
 import util
@@ -11,7 +12,7 @@ class QBRegression(Predictor):
 		raise UnimplementedError
 
 	def train(self, X, y):
-		self.lr = linear_model.Lasso()
+		self.lr = util.universalRegression()
 		self.lr.fit(X, y)
 
 	def predict(self, X):
@@ -64,11 +65,58 @@ class FOPRegression(QBRegression):
 
 
 
+class CombinedModel(Predictor):
+	def __init__(self, questionList, featurePredictors, topLevelPredictor):
+		self.questionList = questionList
+		self.featurePredictorModels = featurePredictors
+		self.topLevelPredictorModel = topLevelPredictor
+		super(CombinedModel, self).__init__(questionList)
+
+	def prepare(self, train):
+		self.topLevelPredictor = self.topLevelPredictorModel()
+		self.featurePredictors = []
+		for featurePredictor in self.featurePredictorModels:
+			fp = featurePredictor(self.questionList)
+			fp.prepare(train)
+			self.featurePredictors.append(fp)
+
+	def train(self, X, y):
+		try:
+			self.topLevelPredictor.train(X, y)
+		except AttributeError:
+			self.topLevelPredictor.fit(X, y)
+
+	def predict(self, X):
+		return self.topLevelPredictor.predict(X)
+
+	def parseQuestionList(self, questionList):
+		qpr = questionList.getQuestionsPerRespondent()
+
+		X = []
+		y = []
+
+		for featurePredictor in self.featurePredictors:
+			if len(X) == 0:
+				X, y = featurePredictor.parseQuestionList(questionList)
+			else:
+				thisX, _ = featurePredictor.parseQuestionList(questionList)
+				for i, entry in enumerate(X):
+					X[i] = np.concatenate((entry, thisX[i]))
+
+		return X, y
+
+
+
+
+
 if __name__ == '__main__':
 	total_err_ran = 0.0
 	total_err_cbg = 0.0
 	total_err_bop = 0.0
 	total_err_fop = 0.0
+	total_err_edit = 0.0
+	total_err_cep = 0.0
+	total_err_com = 0.0
 
 	for i in range(util.TRIALS):
 		print "Trial", i
@@ -78,11 +126,17 @@ if __name__ == '__main__':
 		cbg = ConstantBestGuessPredictor(ql)
 		bop = BOPRegression(ql)
 		fop = FOPRegression(ql)
+		cep = CharEditDistancePredictor(ql)
+		edit = WordEditDistancePredictor(ql)
+		com = CombinedModel(ql, [NGramRegression, FractionOverlapPredictor, CharEditDistancePredictor], linear_model.LinearRegression)
 
 		total_err_ran += ran.run()
 		total_err_cbg += cbg.run()
 		total_err_bop += bop.run()
 		total_err_fop += fop.run()
+		total_err_edit += edit.run()
+		total_err_cep += cep.run()
+		total_err_com += com.run()
 
 	print "Average Random RMSE:",
 	print total_err_ran/util.TRIALS
@@ -95,3 +149,12 @@ if __name__ == '__main__':
 
 	print "Average FOP RMSE:",
 	print total_err_fop/util.TRIALS
+
+	print "Average Char Edit RMSE:",
+	print total_err_cep/util.TRIALS
+
+	print "Average Word Edit RMSE:",
+	print total_err_edit/util.TRIALS
+
+	print "Average COM RMSE:",
+	print total_err_com/util.TRIALS

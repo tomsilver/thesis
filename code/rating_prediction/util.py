@@ -1,14 +1,21 @@
 from matplotlib import pyplot as plt
+from nltk.corpus import wordnet as wn
 from questions import *
+from sklearn import linear_model
 from stop_words import get_stop_words
 
+import editdistance
+import notMyCode
 import os
 import random
 import re
+import xml.etree.ElementTree as ET
 
 STOP_WORDS = get_stop_words('english')
 TOTAL_RESP = 24
 TRIALS = 100
+
+universalRegression = linear_model.LinearRegression
 
 
 def clean_str(s):
@@ -60,7 +67,7 @@ def parseMohler(base_data_dir="../../datasets/ShortAnswerGrading_v2.0/data",
 			break
 
 		ideal_response = ideal_dict[qid]
-		q = Question(question_str, ideal_response)
+		q = Question(question_str, [ideal_response])
 		questions_dict[qid] = q
 		ql.addQuestion(q)
 		question_count += 1
@@ -118,6 +125,9 @@ def parsePowerGrading(base_data_dir="../../datasets/Powergrading-1.0-Corpus",
 					  responses_file="studentanswers_grades_698.tsv",
 					  total_questions=-1):	
 
+	# only certain questions are graded
+	gradedQuestionIds = [1, 2, 3, 4, 5, 6, 7, 8, 13, 20]
+
 	# initialize question list
 	ql = QuestionList()
 
@@ -132,16 +142,18 @@ def parsePowerGrading(base_data_dir="../../datasets/Powergrading-1.0-Corpus",
 				continue
 			qlinesplit = qline.split('\t')
 			qid = qlinesplit[0]
-			question_str = clean_str(qlinesplit[1])
-			ideal_responses = [clean_str(s) for s in qlinesplit[2:]]
 
-			if total_questions >= 0 and question_count > total_questions:
-				break
+			if int(qid) in gradedQuestionIds:
+				question_str = clean_str(qlinesplit[1])
+				ideal_responses = [clean_str(s) for s in qlinesplit[2:]]
 
-			q = Question(question_str, ideal_responses)
-			questions_dict[qid] = q
-			ql.addQuestion(q)
-			question_count += 1
+				if total_questions >= 0 and question_count > total_questions:
+					break
+
+				q = Question(question_str, ideal_responses)
+				questions_dict[qid] = q
+				ql.addQuestion(q)
+				question_count += 1
 
 	# create responses and respondents
 	responses_abs_file = os.path.join(base_data_dir, responses_file)
@@ -157,21 +169,23 @@ def parsePowerGrading(base_data_dir="../../datasets/Powergrading-1.0-Corpus",
 				continue
 			rid, qid, response_str, g1, g2, g3 = rline.split('\t')
 
-			if rid != current_respondent_id:
-				# we already finished previous respondent
-				if current_respondent is not None:
-					current_respondent.setRating(current_respondent_rating)
+			if int(qid) in gradedQuestionIds:
 
-				# initialize next respondent
-				current_respondent = Respondent(rid, 0)
-				respondents.append(current_respondent)
-				current_respondent_id = rid
-				current_respondent_rating = 0
+				if rid != current_respondent_id:
+					# we already finished previous respondent
+					if current_respondent is not None:
+						current_respondent.setRating(current_respondent_rating)
 
-			current_respondent_rating += float(g1) + float(g2) + float(g3)
-			question = questions_dict[qid]
-			response = Response(clean_str(response_str), question, current_respondent)
-			question.addResponse(response)
+					# initialize next respondent
+					current_respondent = Respondent(rid, 0)
+					respondents.append(current_respondent)
+					current_respondent_id = rid
+					current_respondent_rating = 0
+
+				current_respondent_rating += float(g1) + float(g2) + float(g3)
+				question = questions_dict[qid]
+				response = Response(clean_str(response_str), question, current_respondent)
+				question.addResponse(response)
 
 	# scale scores
 	respondent_scores = [r.getRating() for r in respondents]
@@ -256,15 +270,14 @@ def wordsFromQuestionList(questionList, ngram_cap=1):
 	except AttributeError:
 		questions = questionList
 
-	for ngram in range(1, ngram_cap+1):
-		for question in questions:
-			for response in question.getResponses():
-				new_words = wordsFromResponse(response, ngram)
-				words.update(new_words)
+	for question in questions:
+		for response in question.getResponses():
+			new_words = wordsFromResponse(response, ngram_cap)
+			words.update(new_words)
 	return words
 
 
-def plotRatingsFromQuestionList(questionList):
+def plotRatingsFromQuestionList(questionList, plotTitle):
 	qpr = questionList.getQuestionsPerRespondent()
 
 	ratings = []
@@ -273,12 +286,26 @@ def plotRatingsFromQuestionList(questionList):
 		ratings.append(respondent.getRating())
 
 	plt.hist(ratings, 10, histtype='bar', rwidth=0.8)
+	plt.title(plotTitle)
+	plt.xlabel('Normalized Ratings')
+	plt.ylabel('Count')
 	plt.show()
 
 
+def editDistance(str1, str2):
+	return int(editdistance.eval(str1, str2))
 
+def getSyns(word):
+	syns = []
+	for synset in wn.synsets(word):
+		for lemma in synset.lemmas():
+			cleanedSyn = clean_str(lemma.name())
+			syns.append(cleanedSyn)
+	return syns
+
+def computeLiSimilarity(sentence1, sentence2, normalizeInfoContent=True):
+	return notMyCode.similarity(sentence1, sentence2, normalizeInfoContent)
 
 if __name__ == '__main__':
-	ql = parsePowerGrading()
-	ql.prettyPrint()
-	plotRatingsFromQuestionList(ql)
+	ql = parseMohler()
+	plotRatingsFromQuestionList(ql, 'Mohler Rating Distribution')

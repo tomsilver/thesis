@@ -43,7 +43,10 @@ class Predictor(object):
 		for respondent in qpr.keys():
 			y.append(respondent.getRating())
 
-		return None, y
+		return [], y
+
+	def canBeFeature(self):
+		return True
 
 
 class ConstantBestGuessPredictor(Predictor):
@@ -54,11 +57,17 @@ class ConstantBestGuessPredictor(Predictor):
 	def predict(self, X):
 		return self.guess
 
+	def canBeFeature(self):
+		return False
+
 
 
 class RandomPredictor(Predictor):
 
 	def predict(self, X):
 		return random.random()
+
+	def canBeFeature(self):
+		return False
 
 

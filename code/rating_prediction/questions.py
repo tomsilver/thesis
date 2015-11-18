@@ -85,6 +85,9 @@ class Response(str):
 	def getRating(self):
 		return self.respondent.getRating()
 
+	def getRespondentID(self):
+		return self.respondent.getID()
+
 
 
 class Respondent(object):
@@ -97,4 +100,7 @@ class Respondent(object):
 
 	def getRating(self):
 		return self.rating
+
+	def getID(self):
+		return self.rid
 
