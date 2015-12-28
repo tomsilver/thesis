@@ -1,3 +1,4 @@
+from gensim.models import word2vec
 from matplotlib import pyplot as plt
 from nltk.corpus import wordnet as wn
 from questions import *
@@ -14,6 +15,7 @@ import xml.etree.ElementTree as ET
 STOP_WORDS = get_stop_words('english')
 TOTAL_RESP = 24
 TRIALS = 100
+TEXT8 = None
 
 universalRegression = linear_model.LinearRegression
 
@@ -305,6 +307,12 @@ def getSyns(word):
 
 def computeLiSimilarity(sentence1, sentence2, normalizeInfoContent=True):
 	return notMyCode.similarity(sentence1, sentence2, normalizeInfoContent)
+
+def getText8Model():
+	global TEXT8
+	if TEXT8 is None:
+		TEXT8 = word2vec.Word2Vec.load('../../datasets/text8.model')
+	return TEXT8
 
 if __name__ == '__main__':
 	ql = parseMohler()

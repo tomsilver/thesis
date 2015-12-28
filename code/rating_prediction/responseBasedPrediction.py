@@ -18,7 +18,13 @@ class ResponseBasedPredictor(Predictor):
 		self.lr.fit(X, y)
 
 	def predict(self, X):
-		return self.lr.predict(X)
+		y = self.lr.predict(X)
+		for idx in range(len(y)):
+			if y[idx] > 1:
+				y[idx] = 1.0
+			elif y[idx] < 0:
+				y[idx] = 0.0
+		return y
 
 	def responseToVec(self, resp):
 		"""Returns a numpy array. Needs to be implemented by subclass."""

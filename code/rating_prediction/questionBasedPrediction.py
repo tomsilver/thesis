@@ -9,17 +9,17 @@ class QuestionBasedPredictor(Predictor):
 	def compareWithIdeal(self, response, ideals):
 		raise UnimplementedError
 
+	def train(self, X, y):
+		self.lr = util.universalRegression()
+		self.lr.fit(X, y)
+
 	def predict(self, X):
-		y = []
-
-		for x in X:
-			avg_correct_rate = 0.0
-			num_resp = len(x)
-			for correct_rate in x:
-				avg_correct_rate += correct_rate
-
-			y.append(avg_correct_rate/num_resp)
-
+		y = self.lr.predict(X)
+		for idx in range(len(y)):
+			if y[idx] > 1:
+				y[idx] = 1.0
+			elif y[idx] < 0:
+				y[idx] = 0.0
 		return y
 
 	def parseQuestionList(self, questionList):
@@ -69,37 +69,6 @@ class CharEditDistancePredictor(QuestionBasedPredictor):
 
 
 
-# class GensimSSP(QuestionBasedPredictor):
-
-# 	def prepare(self, train):
-# 		self.ideal_responses = [r for s in train.getQuestions() for r in s.getIdealResponse()]
-# 		print self.ideal_responses
-# 		texts = [util.str_to_word_list(s) for s in self.ideal_responses]
-# 		self.dictionary = corpora.Dictionary(texts)
-# 		corpus = [self.dictionary.doc2bow(text) for text in texts]
-# 		self.lsi = models.LsiModel(corpus, id2word=self.dictionary, num_topics=3)
-# 		self.index = similarities.MatrixSimilarity(self.lsi[corpus])
-
-# 	def compareWithIdeal(self, response, ideals):
-# 		vec_bow = self.dictionary.doc2bow(util.str_to_word_list(response))
-# 		vec_lsi = self.lsi[vec_bow]
-# 		sims = self.index[vec_lsi]
-
-# 		max_ideal = 0
-# 		best_ideal = None
-
-# 		for ideal in ideals:
-# 			ideal_idx = self.ideal_responses.index(ideal)
-# 			ideal_match = sims[ideal_idx]
-# 			if ideal_match > max_ideal:
-# 				max_ideal = ideal_match
-# 				best_ideal = ideal
-
-# 		print util.str_to_word_list(response), best_ideal, max_ideal
-
-# 		return max_ideal
-
-
 class Word2VecCosine(QuestionBasedPredictor):
 
 	def prepare(self, train):
@@ -121,6 +90,28 @@ class Word2VecCosine(QuestionBasedPredictor):
 
 		return maxSimilarity
 
+class TrainedWord2VecCosine(QuestionBasedPredictor):
+
+	def prepare(self, train):
+		self.model = util.getText8Model()
+
+	def compareWithIdeal(self, response, ideals):
+		responseList = util.str_to_word_list(response)
+		idealSentences = [s.encode('utf-8').split() for s in ideals]
+		knownWords = filter(lambda s: self.model.__contains__(s), responseList)
+		if len(knownWords) == 0:
+			return 0
+
+		maxSimilarity = 0
+		for ideal in idealSentences:
+			known = filter(lambda s: self.model.__contains__(s), ideal)
+			if len(known) == 0:
+				continue
+			sim = self.model.n_similarity(known, knownWords)
+			maxSimilarity = max(maxSimilarity, sim)
+
+		return maxSimilarity
+
 
 class LiSemanticNets(QuestionBasedPredictor):
 
@@ -129,7 +120,10 @@ class LiSemanticNets(QuestionBasedPredictor):
 		for ideal in ideals:
 			if response == ideal:
 				return 1.0
-			sim = util.computeLiSimilarity(response, ideal)
+			try:
+				sim = util.computeLiSimilarity(response, ideal)
+			except:
+				sim = 0.0
 			maxSimilarity = max(sim, maxSimilarity)
 		return maxSimilarity
 
@@ -162,38 +156,65 @@ class FractionOverlapPredictor(QuestionBasedPredictor):
 
 if __name__ == '__main__':
 	ql = util.parsePowerGrading()
-	lsn = LiSemanticNets(ql)
-	print lsn.run()
+	# lsn = LiSemanticNets(ql)
+	# print lsn.run()
 
 
-	# total_err_ran = 0.0
-	# total_err_cbg = 0.0
-	# total_err_bop = 0.0
-	# total_err_fop = 0.0
+	total_err_ran = 0.0
+	total_err_cbg = 0.0
+	total_err_bop = 0.0
+	total_err_fop = 0.0
+	total_err_wed = 0.0
+	total_err_ced = 0.0
+	total_err_w2v = 0.0
+	total_err_twv = 0.0
 
-	# for i in range(util.TRIALS):
-	# 	print "Trial", i
+	for i in range(util.TRIALS):
+		print "Trial", i
 
-	# 	ql = util.parsePowerGrading()
-	# 	ran = RandomPredictor(ql)
-	# 	cbg = ConstantBestGuessPredictor(ql)
-	# 	bop =  BinaryOverlapPredictor(ql)
-	# 	fop = FractionOverlapPredictor(ql)
+		ql = util.parsePowerGrading()
+		ran = RandomPredictor(ql)
+		cbg = ConstantBestGuessPredictor(ql)
+		bop =  BinaryOverlapPredictor(ql)
+		fop = FractionOverlapPredictor(ql)
+		wed = WordEditDistancePredictor(ql)
+		ced = CharEditDistancePredictor(ql)
+		w2v = Word2VecCosine(ql)
+		twv = TrainedWord2VecCosine(ql)
 
-	# 	total_err_ran += ran.run()
-	# 	total_err_cbg += cbg.run()
-	# 	total_err_bop += bop.run()
-	# 	total_err_fop += fop.run()
 
-	# print "Average Random RMSE:",
-	# print total_err_ran/util.TRIALS
+		total_err_ran += ran.run()
+		total_err_cbg += cbg.run()
+		total_err_bop += bop.run()
+		total_err_fop += fop.run()
+		total_err_wed += wed.run()
+		total_err_ced += ced.run()
+		total_err_w2v += w2v.run()
+		total_err_twv += twv.run()
 
-	# print "Average CBG RMSE:",
-	# print total_err_cbg/util.TRIALS
+	print "Average Random RMSE:",
+	print total_err_ran/util.TRIALS
 
-	# print "Average BOP RMSE:",
-	# print total_err_bop/util.TRIALS
+	print "Average CBG RMSE:",
+	print total_err_cbg/util.TRIALS
 
-	# print "Average FOP RMSE:",
-	# print total_err_fop/util.TRIALS
+	print "Average BOP RMSE:",
+	print total_err_bop/util.TRIALS
+
+	print "Average FOP RMSE:",
+	print total_err_fop/util.TRIALS
+
+	print "Average WED RMSE:",
+	print total_err_wed/util.TRIALS
+
+	print "Average CED RMSE:",
+	print total_err_ced/util.TRIALS
+
+	print "Average W2V RMSE:",
+	print total_err_w2v/util.TRIALS
+
+	print "Average TWV RMSE:",
+	print total_err_twv/util.TRIALS
+
+	
 

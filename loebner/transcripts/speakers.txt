@@ -1,0 +1,14 @@
+2006.P1.txt,machine,human
+2006.P2.txt,human,machine
+2006.P3.txt,human,machine
+2006.P4.txt,human,machine
+2007.P1.txt,machine,human
+2007.P2.txt,machine,human
+2007.P3.txt,human,machine
+2009.P1.txt,machine,human
+2009.P2.txt,human,machine
+2009.P3.txt,machine,human
+2010.P1.txt,machine,human
+2010.P2.txt,machine,human
+2010.P3.txt,human,machine
+2010.P4.txt,human,machine

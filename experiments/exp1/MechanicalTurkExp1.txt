@@ -1,0 +1,57 @@
+﻿Independent Variables:
+
+
+Control 0: Kindness Rating
+Control 1: Random Rating
+Option 0: Intelligence Rating
+Option 1: Comprehension Rating
+Option 2: Understanding Rating
+Option 3: Question Answering Rating
+Option 4: Perception Rating
+Option 5: Awareness Rating
+Option 6: Cleverness Rating
+Option 7: Smarts Rating
+
+
+Prompt:
+
+
+Imagine you are playing a new game. Before the game starts, you are given an initial rating, called your [INDEPENDENT VARIABLE]. Initial ratings are 1200 for all players of the game. After the game, your rating may go up, down, or stay the same.
+
+
+Questions:
+
+1. Suppose your rating goes up to 1300. How disappointed or encouraged would you be?
+   1. Very disappointed
+   2. Somewhat disappointed
+   3. Neutral
+   4. Somewhat encouraged
+   5. Very encouraged
+
+   1. Suppose your rating goes up to 1300. How likely are you to play another game?
+   1. Very unlikely
+   2. Somewhat unlikely
+   3. Neutral
+   4. Somewhat likely
+   5. Very likely
+
+      1. Suppose your rating goes up to 1100. How disappointed or encouraged would you be?
+      1. Very disappointed
+      2. Somewhat disappointed
+      3. Neutral
+      4. Somewhat encouraged
+      5. Very encouraged
+
+         1. Suppose your rating goes down to 1100. How likely are you to play another game?
+         1. Very unlikely
+         2. Somewhat unlikely
+         3. Neutral
+         4. Somewhat likely
+         5. Very likely
+
+            1. Based on the name “[INDEPENDENT VARIABLE]”, would you think that the game is trying to measure your intelligence?
+            1. It is definitely not trying to measure my intelligence
+            2. It is probably not trying to measure my intelligence
+            3. I am not sure if it is trying to measure my intelligence
+            4. It is probably trying to measure my intelligence
+            5. It is definitely trying to measure my intelligence

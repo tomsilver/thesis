@@ -1,0 +1,102 @@
+\documentclass{article} % For LaTeX2e
+\usepackage{numenta_style,times}
+\usepackage{hyperref}
+\usepackage{url}
+\usepackage{amsmath}
+\usepackage{tocloft}
+%\documentstyle[nips13submit_09,times,art10]{article} % For LaTeX 2.09
+
+
+\title{Annotated Bibliography For Senior Thesis}
+
+
+\author{
+Tom Silver\\
+Harvard University \\
+\texttt{tsilver@college.harvard.edu} \\
+\And
+Stuart Shieber \\
+Harvard University \\
+\texttt{shieber@seas.harvard.edu} \\
+}
+\newcommand{\fix}{\marginpar{FIX}}
+\newcommand{\new}{\marginpar{NEW}}
+
+\nipsfinalcopy % Uncomment for camera-ready version
+
+% Dots for TOC
+\renewcommand{\cftsecleader}{\cftdotfill{\cftdotsep}}
+
+\begin{document}
+
+
+\maketitle
+
+\begin{abstract}
+TODO
+ \\
+
+\emph{Date: \today}
+\end{abstract}
+
+\clearpage
+
+
+\renewcommand{\contentsname}{Table of Contents}
+\setcounter{tocdepth}{2}
+\tableofcontents
+
+\clearpage
+
+\section{The Turing Test}
+	Overview: \cite{shieber2004turing}
+
+\subsection{Philosophy of the Turing Test}
+
+Beginning with Turing's original paper \cite{turing1950computing}, this collection of papers examines the philosophical underpinning of the Test. These papers attempt to rigorously define intelligence and determine whether the Turing Test reflects the proposed definitions. 
+\\
+\\ Related citations: \cite{turing1950computing}, \cite{shieber2007turing}, \cite{searle1980minds}, \cite{moor1976analysis}, \cite{moor2001status}, \cite{hayes1995turing}, \cite{cullen2009imitation}
+
+\subsection{Practical Implementations of the Turing Test}
+
+These papers characterize attempted practical implementations of the Turing Test, such as the Loebner Prize. The collection also includes papers that formalize the Turing Test mathematically and explore its properties as a practical test.
+\\
+\\ Related citations: \cite{weizenbaum1966eliza}, \cite{shieber1994lessons}, \cite{lupkowski2011turing}, \cite{bradford1995formalization}
+
+\subsection{Proposed Alternatives to the Turing Test}
+
+In this collection, authors consider alternatives to the Turing Test, i.e. other tests that aim to evaluate the intelligence of a machine. There have been a number of recent seminars and informal discussions on the subject; these will also be included here.
+\\
+\\ Related citations: \cite{riedl2014lovelace}, \cite{marcus2014comes}, \cite{levesque2012winograd}, \cite{levesque2009enough}, \cite{cohen2005if}
+
+\section{General Test Design}
+
+The centerpiece of this thesis is a new test for intelligence. The design of this test needs to be informed by general test design principles, which apply regardless of the quality that is under consideration.
+
+\subsection{Inducement Prizes}
+
+These papers survey existing inducement prizes, including their triumphs and pitfalls. They consider the ultimate goals of such prizes and attempt to elucidate general principles for successful inducement.
+\\
+\\ Related citations: \cite{schroeder2004application}
+
+\subsection{Rating Systems}
+
+The proposed test in this thesis does not output a binary value for intelligence, but instead assigns a rating that reflects the relative intelligence of the evaluated subject relative to other subjects in the system. One closely related rating system is the Elo rating system used in chess. These papers consider the Elo rating system and other related systems. The statistical foundation of Elo is of primary interest.
+\\
+\\ Related citations: \cite{keener1993perron}, \cite{hastie1998classification}, \cite{glickman1999rating}, \cite{bradley1952rank}, \cite{elo1978rating}
+
+\section{Training Judges}
+
+An interesting machine learning problem that has immediately emerged from the proposed competitive rating system is that of training judges. A machine in our system needs an algorithm for estimating the intelligence ratings of its competitors. Papers in this section suggest various avenues for approaching this problem.
+
+\subsection{Learning to Rank}
+
+One subfield of machine learning that has recently received a lot of attention is the problem of learning rank functions. While the problem is not exactly that of training a judge, there may be parallels between the two problems and perhaps inspiration to take from the recent progress in the former.
+\\
+\\ Related citations:  \cite{valizadegan2009learning}, \cite{chapelle2011yahoo}, \cite{cao2007learning}
+
+\bibliographystyle{plain-annote}
+%\bibliographystyle{apalike}
+\bibliography{tombibliography}
+
+\end{document}
